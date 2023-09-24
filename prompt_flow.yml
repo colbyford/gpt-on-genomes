@@ -1,0 +1,104 @@
+inputs:
+  question:
+    type: string
+    default: <YOUR QUESTION HERE>
+    is_chat_input: false
+outputs:
+  output:
+    type: string
+    reference: ${answer_the_question_with_context.output}
+    evaluation_only: false
+    is_chat_output: false
+nodes:
+- name: embed_the_question
+  type: python
+  source:
+    type: package
+    tool: promptflow.tools.embedding.embedding
+  inputs:
+    connection: oai-genomics-dev-eastus-001
+    deployment_name: text-embedding-ada-002_001
+    input: ${flow.question}
+  aggregation: false
+  use_variants: false
+- name: search_question_from_faiss_index
+  type: python
+  source:
+    type: package
+    tool: promptflow_vectordb.tool.faiss_index_lookup.FaissIndexLookup.search
+  inputs:
+    path: azureml://subscriptions/716f8ad9-4f2d-48da-a905-eb77071da449/resourcegroups/rg-genomics-dev-eastus-001/workspaces/ml-genomics-dev-eastus-001/datastores/workspaceblobstore/paths/azureml/2cc7e647-0ad8-44da-b978-3a6ed5fde590/index/
+    top_k: 5
+    vector: ${embed_the_question.output}
+  use_variants: false
+- name: generate_prompt_context
+  type: python
+  source:
+    type: code
+    path: generate_prompt_context.py
+  inputs:
+    search_result: ${search_question_from_faiss_index.output}
+  aggregation: false
+  use_variants: false
+- name: Prompt_varients
+  use_variants: true
+- name: answer_the_question_with_context
+  type: llm
+  source:
+    type: code
+    path: answer_the_question_with_context.jinja2
+  inputs:
+    deployment_name: gpt-35-turbo-001
+    temperature: 0
+    top_p: 1
+    stop: ""
+    max_tokens: 1000
+    presence_penalty: 0
+    frequency_penalty: 0
+    logit_bias: ""
+    prompt_text: ${Prompt_varients.output}
+  provider: AzureOpenAI
+  connection: oai-genomics-dev-eastus-001
+  api: chat
+  module: promptflow.tools.aoai
+  aggregation: false
+  use_variants: false
+node_variants:
+  Prompt_varients:
+    default_variant_id: gpt_similarity
+    variants:
+      gpt_similarity:
+        node:
+          name: Prompt_varients
+          type: prompt
+          source:
+            type: code
+            path: Prompt_varients__gpt_similarity.jinja2
+          inputs:
+            contexts: ${generate_prompt_context.output}
+            question: ${flow.question}
+          aggregation: false
+      gpt_relevance:
+        node:
+          name: Prompt_varients
+          type: prompt
+          source:
+            type: code
+            path: Prompt_varients__gpt_relevance.jinja2
+          inputs:
+            contexts: ${generate_prompt_context.output}
+            question: ${flow.question}
+          aggregation: false
+      bert_f1:
+        node:
+          name: Prompt_varients
+          type: prompt
+          source:
+            type: code
+            path: Prompt_varients__bert_f1.jinja2
+          inputs:
+            contexts: ${generate_prompt_context.output}
+            question: ${flow.question}
+          aggregation: false
+environment:
+  python_requirements_txt: requirements.txt
