@@ -1,5 +1,7 @@
 # VCF Prompt Variants
 
+(Yes, I'm aware that "variants" is misspelled below. This is not my typo, but mistake in the auto-naming from the Prompt Flow template...)
+
 ## Prompt_varients__gpt_similarity.jinja2
 
 ```
