@@ -3,7 +3,7 @@
 <h3 align="right">Colby T. Ford, Ph.D.</h3>
 
 
-Use Azure OpenAI and Azure Machine Learning Studio to create a GPT model with a genomics context. This example allows for ChatGPT-like chat interactivity with variant information (from a modified VCF data).
+Use Azure OpenAI and Azure Machine Learning Studio to create a GPT model with a genomics context. This example allows for ChatGPT-like chat interactivity with variant information (from modified VCF data).
 
 Companion Repo for: https://medium.com/@colbyford/11fc607f1b3
 
